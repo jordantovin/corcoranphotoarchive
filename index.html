@@ -4,18 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Corcoran Photo Archive</title>
-
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- bump v= when you update -->
-  <link rel="stylesheet" href="/style.css?v=10">
-  <script src="/script.js?v=10" defer></script>
-  <script src="/viewer.js?v=10" defer></script>
+  <link rel="stylesheet" href="/style.css?v=11">
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/script.js?v=11" defer></script>
+  <script src="/viewer.js?v=11" defer></script>
+  <script src="/map.js?v=11" defer></script>
 </head>
-
 <body>
   <header class="topbar">
     <div class="wrap topbar-inner">
       <h1>Corcoran Photo Archive</h1>
-
       <div class="controls">
         <input
           id="search"
@@ -24,47 +26,45 @@
           autocomplete="off"
         />
         <span id="count" class="count"></span>
+        <button id="mapToggleBtn" type="button" class="map-toggle-btn">MAP</button>
       </div>
     </div>
   </header>
-
   <main class="wrap">
     <section id="masonry" class="masonry" aria-live="polite"></section>
     <div id="status" class="status"></div>
   </main>
-
+  
+  <!-- Map Container -->
+  <div id="mapContainer" style="display: none;">
+    <div id="map" style="width: 100%; height: 100%;"></div>
+  </div>
+  
   <!-- Fullscreen Viewer (white background) -->
   <div id="viewer" class="viewer" aria-hidden="true">
     <!-- Clicking this backdrop (outside the panel) closes -->
     <div class="viewer-backdrop" data-viewer-close="1"></div>
-
     <div class="viewer-panel" role="dialog" aria-modal="true" aria-label="Photo viewer">
       <button class="viewer-close" type="button" aria-label="Close" data-viewer-close="1">×</button>
-
       <div class="viewer-grid">
         <div class="viewer-image-wrap">
           <img id="viewer-img" alt="" />
         </div>
-
         <div class="viewer-meta">
           <div id="viewer-title" class="viewer-title"></div>
-
           <div class="viewer-fields">
             <div class="viewer-field">
               <div class="viewer-label">Date</div>
               <div id="viewer-date" class="viewer-value"></div>
             </div>
-
             <div class="viewer-field">
               <div class="viewer-label">Location</div>
               <div id="viewer-location" class="viewer-value"></div>
             </div>
-
             <div class="viewer-field">
               <div class="viewer-label">Photographer</div>
               <div id="viewer-photographer" class="viewer-value"></div>
             </div>
-
             <div class="viewer-field viewer-field-wide">
               <div class="viewer-label">Description</div>
               <div id="viewer-description" class="viewer-value viewer-description"></div>
@@ -72,7 +72,6 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </body>
