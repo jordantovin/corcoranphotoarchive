@@ -6,14 +6,8 @@ const statusEl = document.getElementById("status");
 const searchEl = document.getElementById("search");
 const countEl = document.getElementById("count");
 
-const modalEl = document.getElementById("modal");
-const modalImg = document.getElementById("modal-img");
-const modalMeta = document.getElementById("modal-meta");
-const modalClose = document.getElementById("modal-close");
-
 let allRows = [];
 let shownRows = [];
-let currentIndex = -1;
 
 init();
 
@@ -32,19 +26,6 @@ async function init() {
     updateCount(shownRows.length, allRows.length);
 
     searchEl.addEventListener("input", onSearch);
-
-    modalClose.addEventListener("click", closeModal);
-    modalEl.addEventListener("click", (e) => {
-      if (e.target === modalEl) closeModal();
-    });
-
-    document.addEventListener("keydown", (e) => {
-      if (!modalEl.classList.contains("active")) return;
-      if (e.key === "Escape") closeModal();
-      if (e.key === "ArrowRight") nextModal();
-      if (e.key === "ArrowLeft") prevModal();
-    });
-
   } catch (err) {
     console.error(err);
     setStatus("Couldn’t load the CSV. Check the link + permissions.");
@@ -63,13 +44,12 @@ function onSearch() {
 
   shownRows = allRows.filter(r => {
     const haystack = [
-      r.location_card,
-      r.description,
-      r.medium,
-      r.artist,
-      r.keywords,
-      r.feed,
+      r.title,
       r.date,
+      r.location_card,
+      r.photographer,
+      r.description,
+      r.keywords,
       r.coordinates,
     ].join(" ").toLowerCase();
 
@@ -86,7 +66,7 @@ function render(rows) {
       <button class="image-btn" type="button" data-idx="${idx}" aria-label="Open image">
         <img
           src="${escapeAttr(r.src)}"
-          alt="${escapeAttr(r.description || r.location_card || "Archive image")}"
+          alt="${escapeAttr(r.title || r.description || r.location_card || "Archive image")}"
           loading="lazy"
           decoding="async"
         />
@@ -95,60 +75,24 @@ function render(rows) {
   `).join("");
 }
 
-// click delegation
+/**
+ * Click delegation:
+ * We call `window.openViewer(row, idx, shownRows)` from viewer.js
+ */
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".image-btn");
   if (!btn) return;
+
   const idx = Number(btn.dataset.idx);
   if (Number.isNaN(idx)) return;
-  openModal(idx);
+
+  const row = shownRows[idx];
+  if (!row) return;
+
+  if (typeof window.openViewer === "function") {
+    window.openViewer(row, idx, shownRows);
+  }
 });
-
-function openModal(idx) {
-  currentIndex = idx;
-  const r = shownRows[idx];
-  if (!r) return;
-
-  modalImg.src = r.src;
-
-  const title = r.location_card || "";
-  const sub = [r.date, r.medium, r.artist].filter(Boolean).join(" • ");
-
-  modalMeta.innerHTML = `
-    ${title ? `<div class="meta-title">${escapeHTML(title)}</div>` : ""}
-    ${sub ? `<div class="meta-muted">${escapeHTML(sub)}</div>` : ""}
-    ${r.description ? `<div style="margin-top:10px;">${escapeHTML(r.description)}</div>` : ""}
-    ${r.keywords ? `<div class="meta-muted" style="margin-top:10px;">${escapeHTML(r.keywords)}</div>` : ""}
-    ${r.coordinates ? `<div class="meta-muted" style="margin-top:10px;">coords: ${escapeHTML(r.coordinates)}</div>` : ""}
-  `;
-
-  modalEl.classList.add("active");
-  modalEl.setAttribute("aria-hidden", "false");
-
-  document.documentElement.style.overflow = "hidden";
-  document.body.style.overflow = "hidden";
-}
-
-function closeModal() {
-  modalEl.classList.remove("active");
-  modalEl.setAttribute("aria-hidden", "true");
-
-  document.documentElement.style.overflow = "";
-  document.body.style.overflow = "";
-
-  modalImg.src = "";
-  currentIndex = -1;
-}
-
-function nextModal() {
-  if (!shownRows.length) return;
-  openModal((currentIndex + 1) % shownRows.length);
-}
-
-function prevModal() {
-  if (!shownRows.length) return;
-  openModal((currentIndex - 1 + shownRows.length) % shownRows.length);
-}
 
 // ---------- Fetch ----------
 async function fetchText(url) {
@@ -173,7 +117,6 @@ function csvToObjects(csvText) {
     headers.forEach((h, idx) => {
       obj[h] = (row[idx] ?? "").trim();
     });
-
     out.push(obj);
   }
   return out;
@@ -220,21 +163,21 @@ function parseCSV(text) {
   return rows;
 }
 
-// ---------- Helpers ----------
+// ---------- Row normalization (matches your new sheet) ----------
 function normalizeRow(r) {
   return {
     src: safe(r.src),
     date: safe(r.date),
     location_card: safe(r.location_card),
     description: safe(r.description),
-    medium: safe(r.medium),
-    artist: safe(r.artist),
+    title: safe(r.title),
+    photographer: safe(r.photographer),
     keywords: safe(r.keywords),
-    feed: safe(r.feed),
     coordinates: safe(r.coordinates),
   };
 }
 
+// ---------- Helpers ----------
 function setStatus(msg) { statusEl.textContent = msg || ""; }
 
 function updateCount(shown, total) {
