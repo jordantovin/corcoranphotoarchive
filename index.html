@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Synology NAS Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    .box {
+      border: 2px solid #fff;
+      padding: 40px;
+      border-radius: 12px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 18px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>✅ NAS Web Server Working</h1>
+    <p>If you can see this page, your Synology is serving HTML correctly.</p>
+    <p id="time"></p>
+    <button onclick="showAlert()">Test JavaScript</button>
+  </div>
+
+  <script>
+    document.getElementById("time").innerText =
+      "Current time: " + new Date().toLocaleString();
+
+    function showAlert() {
+      alert("JavaScript is running from your NAS 🎉");
+    }
+  </script>
+</body>
+</html>
