@@ -205,6 +205,10 @@
             map.closePopup();
           }
           
+          // Close the map view first
+          toggleMap();
+          
+          // Then open the viewer
           if (typeof window.openViewer === 'function') {
             window.openViewer(item, index, currentRows);
           }
@@ -344,7 +348,14 @@
   // ============================================================================
 
   function loadMapData(rows) {
-    console.log('loadMapData called with', rows.length, 'rows');
+    console.log('=== loadMapData called ===');
+    console.log('Total rows:', rows.length);
+    
+    // Debug: log first few rows to see structure
+    if (rows.length > 0) {
+      console.log('Sample row:', rows[0]);
+      console.log('Row keys:', Object.keys(rows[0]));
+    }
     
     if (!map) {
       console.log('Map not initialized, initializing now...');
@@ -361,13 +372,15 @@
     let validCount = 0;
     let invalidCount = 0;
 
-    rows.forEach(item => {
+    rows.forEach((item, index) => {
       const coordString = item.coordinates || '';
       
       if (coordString) {
+        console.log(`Row ${index}: coordinates = "${coordString}"`);
         const coords = parseCoordinates(coordString);
         
         if (coords) {
+          console.log(`  ✓ Parsed: ${coords.lat}, ${coords.lon}`);
           const coordKey = `${coords.lat.toFixed(6)},${coords.lon.toFixed(6)}`;
           
           if (!locationGroups[coordKey]) {
@@ -380,10 +393,18 @@
           locationGroups[coordKey].items.push(item);
           validCount++;
         } else {
+          console.log(`  ✗ Failed to parse coordinates: "${coordString}"`);
           invalidCount++;
+        }
+      } else {
+        // Only log first few empty ones to avoid spam
+        if (index < 5) {
+          console.log(`Row ${index}: no coordinates`);
         }
       }
     });
+
+    console.log('Location groups:', Object.keys(locationGroups).length);
 
     Object.values(locationGroups).forEach(location => {
       const marker = createMarker(location.items, location.coords);
@@ -395,6 +416,8 @@
     if (markers.length > 0) {
       const group = new L.featureGroup(markers);
       map.fitBounds(group.getBounds().pad(0.1));
+    } else {
+      console.warn('No markers to display on map!');
     }
 
     return validCount;
