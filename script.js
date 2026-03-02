@@ -215,3 +215,26 @@ function escapeHTML(str) {
 function escapeAttr(str) {
   return escapeHTML(str).replaceAll('"', "&quot;");
 }
+
+function openModal(data) {
+  const modal = document.getElementById("modal");
+  const img = document.getElementById("modal-img");
+  const meta = document.getElementById("modal-meta");
+
+  img.src = data.src;
+
+  meta.innerHTML = `
+    <strong>${data.location_card || ""}</strong><br>
+    ${data.date || ""}<br><br>
+    ${data.description || ""}<br><br>
+    ${data.artist || ""}<br>
+    ${data.medium || ""}<br>
+    ${data.keywords || ""}
+  `;
+
+  modal.classList.add("active");
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.remove("active");
+}
