@@ -60,9 +60,12 @@ async function init() {
 }
 
 function render(rows) {
-  masonryEl.innerHTML = rows.map(cardHTML).join("");
+  masonryEl.innerHTML = rows.map(r => `
+    <div class="image-item" onclick='openModal(${JSON.stringify(r)})'>
+      <img src="${r.src}" loading="lazy" />
+    </div>
+  `).join("");
 }
-
 function cardHTML(r) {
   const src = safe(r.src);
   const date = safe(r.date);
