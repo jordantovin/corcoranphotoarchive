@@ -10,6 +10,7 @@
   let markers = [];
   let mapVisible = false;
   let currentMapLayer = 'standard';
+  let currentRows = []; // Store current rows locally
 
   // Map layers
   let standardLayer = null;
@@ -20,6 +21,8 @@
   // ============================================================================
 
   function toggleMapLayer() {
+    if (!map) return;
+    
     if (currentMapLayer === 'standard') {
       map.removeLayer(standardLayer);
       satelliteLayer.addTo(map);
@@ -52,6 +55,8 @@
   function initMap() {
     if (map) return;
 
+    console.log('Initializing map...');
+
     map = L.map('map', {
       center: [38.9072, -77.0369], // Washington DC
       zoom: 12,
@@ -69,6 +74,7 @@
     });
 
     standardLayer.addTo(map);
+    console.log('Map initialized successfully');
   }
 
   // ============================================================================
@@ -187,7 +193,7 @@
     const popupImg = document.querySelector('.map-popup-image');
     if (popupImg) {
       const item = itemsArray[currentIndex];
-      const index = shownRows.findIndex(r => r.src === item.src);
+      const index = currentRows.findIndex(r => r.src === item.src);
       
       if (index !== -1) {
         popupImg.style.cursor = 'pointer';
@@ -200,7 +206,7 @@
           }
           
           if (typeof window.openViewer === 'function') {
-            window.openViewer(item, index, shownRows);
+            window.openViewer(item, index, currentRows);
           }
         };
       }
@@ -338,7 +344,15 @@
   // ============================================================================
 
   function loadMapData(rows) {
-    if (!map) initMap();
+    console.log('loadMapData called with', rows.length, 'rows');
+    
+    if (!map) {
+      console.log('Map not initialized, initializing now...');
+      initMap();
+    }
+
+    // Store rows for later use
+    currentRows = rows;
 
     markers.forEach(marker => marker.remove());
     markers = [];
@@ -394,7 +408,17 @@
     const mapContainer = document.getElementById('mapContainer');
     const mapToggleBtn = document.getElementById('mapToggleBtn');
     
-    if (!mapContainer || !mapToggleBtn) return;
+    console.log('toggleMap called', { 
+      mapContainer: !!mapContainer, 
+      mapToggleBtn: !!mapToggleBtn, 
+      mapVisible,
+      currentRows: currentRows.length 
+    });
+    
+    if (!mapContainer || !mapToggleBtn) {
+      console.error('Required elements not found');
+      return;
+    }
 
     mapVisible = !mapVisible;
 
@@ -403,16 +427,27 @@
       mapToggleBtn.classList.add('active');
       
       if (!map) {
+        console.log('Initializing map...');
         initMap();
-        loadMapData(shownRows);
+      }
+      
+      // Get current data from global scope
+      if (typeof window.getShownRows === 'function') {
+        const rows = window.getShownRows();
+        console.log('Got', rows.length, 'rows from window.getShownRows()');
+        loadMapData(rows);
+      } else {
+        console.warn('window.getShownRows() not available');
       }
       
       setTimeout(() => {
         if (map) {
+          console.log('Invalidating map size...');
           map.invalidateSize();
         }
       }, 100);
     } else {
+      console.log('Hiding map');
       mapContainer.style.display = 'none';
       mapToggleBtn.classList.remove('active');
     }
@@ -430,12 +465,18 @@
   // ============================================================================
 
   function initMapModule() {
+    console.log('Map module initializing...');
+    
     const mapToggleBtn = document.getElementById('mapToggleBtn');
     if (mapToggleBtn) {
+      console.log('Found map toggle button, attaching listener');
       mapToggleBtn.addEventListener('click', function(e) {
         e.preventDefault();
+        console.log('Map button clicked!');
         toggleMap();
       });
+    } else {
+      console.error('Map toggle button not found!');
     }
 
     const mapContainer = document.getElementById('mapContainer');
@@ -536,6 +577,8 @@
       }
     `;
     document.head.appendChild(style);
+    
+    console.log('Map module initialized');
   }
 
   if (document.readyState === 'loading') {
