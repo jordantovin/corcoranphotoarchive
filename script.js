@@ -1,47 +1,48 @@
 const CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQAysWFQwQwy2jXfGpQuceY5bmewB_4ix6kBknK_7BVEFlwuOS9WBtRqvcfEAe3jYjOGsa7y8wAkmCU/pub?output=csv";
-
 const masonryEl = document.getElementById("masonry");
 const statusEl = document.getElementById("status");
 const searchEl = document.getElementById("search");
 const countEl = document.getElementById("count");
-
 let allRows = [];
 let shownRows = [];
+
+// Expose shownRows to other modules
+window.getShownRows = function() {
+  return shownRows;
+};
 
 init();
 
 async function init() {
-  setStatus("Loading archive…");
-
+  setStatus("Loading archive...");
   try {
     const csvText = await fetchText(CSV_URL);
     const rows = csvToObjects(csvText);
-
     allRows = rows.map(normalizeRow).filter(r => r.src);
     shownRows = allRows.slice();
-
     render(shownRows);
     setStatus("");
     updateCount(shownRows.length, allRows.length);
-
     searchEl.addEventListener("input", onSearch);
   } catch (err) {
     console.error(err);
-    setStatus("Couldn’t load the CSV. Check the link + permissions.");
+    setStatus("Couldn't load the CSV. Check the link + permissions.");
   }
 }
 
 function onSearch() {
   const q = (searchEl.value || "").trim().toLowerCase();
-
   if (!q) {
     shownRows = allRows.slice();
     render(shownRows);
     updateCount(shownRows.length, allRows.length);
+    // Reload map with all data
+    if (typeof window.loadMapData === 'function') {
+      window.loadMapData(shownRows);
+    }
     return;
   }
-
   shownRows = allRows.filter(r => {
     const haystack = [
       r.title,
@@ -52,12 +53,14 @@ function onSearch() {
       r.keywords,
       r.coordinates,
     ].join(" ").toLowerCase();
-
     return haystack.includes(q);
   });
-
   render(shownRows);
   updateCount(shownRows.length, allRows.length);
+  // Reload map with filtered data
+  if (typeof window.loadMapData === 'function') {
+    window.loadMapData(shownRows);
+  }
 }
 
 function render(rows) {
@@ -82,13 +85,10 @@ function render(rows) {
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".image-btn");
   if (!btn) return;
-
   const idx = Number(btn.dataset.idx);
   if (Number.isNaN(idx)) return;
-
   const row = shownRows[idx];
   if (!row) return;
-
   if (typeof window.openViewer === "function") {
     window.openViewer(row, idx, shownRows);
   }
@@ -105,14 +105,11 @@ async function fetchText(url) {
 function csvToObjects(csvText) {
   const rows = parseCSV(csvText);
   if (!rows.length) return [];
-
   const headers = rows[0].map(h => normalizeHeader(h));
   const out = [];
-
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     if (row.every(cell => !cell || !cell.trim())) continue;
-
     const obj = {};
     headers.forEach((h, idx) => {
       obj[h] = (row[idx] ?? "").trim();
@@ -131,19 +128,15 @@ function parseCSV(text) {
   let row = [];
   let field = "";
   let inQuotes = false;
-
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
     const next = text[i + 1];
-
     if (char === '"') {
       if (inQuotes && next === '"') { field += '"'; i++; }
       else { inQuotes = !inQuotes; }
       continue;
     }
-
     if (char === "," && !inQuotes) { row.push(field); field = ""; continue; }
-
     if ((char === "\n" || char === "\r") && !inQuotes) {
       if (char === "\r" && next === "\n") i++;
       row.push(field);
@@ -152,13 +145,10 @@ function parseCSV(text) {
       field = "";
       continue;
     }
-
     field += char;
   }
-
   row.push(field);
   rows.push(row);
-
   while (rows.length && rows[rows.length - 1].every(c => !c || !c.trim())) rows.pop();
   return rows;
 }
@@ -179,20 +169,16 @@ function normalizeRow(r) {
 
 // ---------- Helpers ----------
 function setStatus(msg) { statusEl.textContent = msg || ""; }
-
 function updateCount(shown, total) {
   countEl.textContent = (total === shown) ? `${total} items` : `${shown} / ${total}`;
 }
-
 function safe(v) { return (v ?? "").toString().trim(); }
-
 function escapeHTML(str) {
   return (str ?? "").toString()
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
 }
-
 function escapeAttr(str) {
   return escapeHTML(str).replaceAll('"', "&quot;");
 }
