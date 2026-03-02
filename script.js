@@ -1,5 +1,3 @@
-// Corcoran Photo Archive — images-only masonry + click-for-metadata modal
-
 const CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQAysWFQwQwy2jXfGpQuceY5bmewB_4ix6kBknK_7BVEFlwuOS9WBtRqvcfEAe3jYjOGsa7y8wAkmCU/pub?output=csv";
 
@@ -26,10 +24,7 @@ async function init() {
     const csvText = await fetchText(CSV_URL);
     const rows = csvToObjects(csvText);
 
-    allRows = rows
-      .map(normalizeRow)
-      .filter(r => r.src);
-
+    allRows = rows.map(normalizeRow).filter(r => r.src);
     shownRows = allRows.slice();
 
     render(shownRows);
@@ -38,14 +33,11 @@ async function init() {
 
     searchEl.addEventListener("input", onSearch);
 
-    // Modal events
     modalClose.addEventListener("click", closeModal);
     modalEl.addEventListener("click", (e) => {
-      // clicking the dark backdrop closes
       if (e.target === modalEl) closeModal();
     });
 
-    // ESC closes modal
     document.addEventListener("keydown", (e) => {
       if (!modalEl.classList.contains("active")) return;
       if (e.key === "Escape") closeModal();
@@ -89,33 +81,26 @@ function onSearch() {
 }
 
 function render(rows) {
-  masonryEl.innerHTML = rows.map((r, idx) => imageHTML(r, idx)).join("");
-}
-
-function imageHTML(r, idx) {
-  const alt = r.description || r.location_card || "Archive image";
-  return `
+  masonryEl.innerHTML = rows.map((r, idx) => `
     <div class="image-item">
       <button class="image-btn" type="button" data-idx="${idx}" aria-label="Open image">
         <img
           src="${escapeAttr(r.src)}"
-          alt="${escapeAttr(alt)}"
+          alt="${escapeAttr(r.description || r.location_card || "Archive image")}"
           loading="lazy"
           decoding="async"
         />
       </button>
     </div>
-  `;
+  `).join("");
 }
 
-// Delegate click events (faster than binding per-image)
+// click delegation
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".image-btn");
   if (!btn) return;
-
   const idx = Number(btn.dataset.idx);
   if (Number.isNaN(idx)) return;
-
   openModal(idx);
 });
 
@@ -126,43 +111,20 @@ function openModal(idx) {
 
   modalImg.src = r.src;
 
-  // Build clean metadata block (only visible on click)
-  const lines = [];
-
-  const title = [r.location_card].filter(Boolean).join("");
-  if (title) lines.push(title);
-
+  const title = r.location_card || "";
   const sub = [r.date, r.medium, r.artist].filter(Boolean).join(" • ");
-  if (sub) lines.push(sub);
-
-  if (r.description) {
-    lines.push("");
-    lines.push(r.description);
-  }
-
-  const tags = [r.keywords].filter(Boolean).join("");
-  if (tags) {
-    lines.push("");
-    lines.push(tags);
-  }
-
-  if (r.coordinates) {
-    lines.push("");
-    lines.push(`coords: ${r.coordinates}`);
-  }
 
   modalMeta.innerHTML = `
     ${title ? `<div class="meta-title">${escapeHTML(title)}</div>` : ""}
     ${sub ? `<div class="meta-muted">${escapeHTML(sub)}</div>` : ""}
-    ${r.description ? `<div class="meta-line" style="margin-top:10px;">${escapeHTML(r.description)}</div>` : ""}
-    ${tags ? `<div class="meta-muted" style="margin-top:10px;">${escapeHTML(tags)}</div>` : ""}
+    ${r.description ? `<div style="margin-top:10px;">${escapeHTML(r.description)}</div>` : ""}
+    ${r.keywords ? `<div class="meta-muted" style="margin-top:10px;">${escapeHTML(r.keywords)}</div>` : ""}
     ${r.coordinates ? `<div class="meta-muted" style="margin-top:10px;">coords: ${escapeHTML(r.coordinates)}</div>` : ""}
   `;
 
   modalEl.classList.add("active");
   modalEl.setAttribute("aria-hidden", "false");
 
-  // prevent page scroll behind modal
   document.documentElement.style.overflow = "hidden";
   document.body.style.overflow = "hidden";
 }
@@ -171,25 +133,21 @@ function closeModal() {
   modalEl.classList.remove("active");
   modalEl.setAttribute("aria-hidden", "true");
 
-  // allow scrolling again
   document.documentElement.style.overflow = "";
   document.body.style.overflow = "";
 
-  // optional: clear src so you don't keep downloading giant images in memory
   modalImg.src = "";
   currentIndex = -1;
 }
 
 function nextModal() {
-  if (shownRows.length === 0) return;
-  const next = (currentIndex + 1) % shownRows.length;
-  openModal(next);
+  if (!shownRows.length) return;
+  openModal((currentIndex + 1) % shownRows.length);
 }
 
 function prevModal() {
-  if (shownRows.length === 0) return;
-  const prev = (currentIndex - 1 + shownRows.length) % shownRows.length;
-  openModal(prev);
+  if (!shownRows.length) return;
+  openModal((currentIndex - 1 + shownRows.length) % shownRows.length);
 }
 
 // ---------- Fetch ----------
@@ -222,10 +180,7 @@ function csvToObjects(csvText) {
 }
 
 function normalizeHeader(h) {
-  return (h || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_");
+  return (h || "").trim().toLowerCase().replace(/\s+/g, "_");
 }
 
 function parseCSV(text) {
@@ -239,27 +194,17 @@ function parseCSV(text) {
     const next = text[i + 1];
 
     if (char === '"') {
-      if (inQuotes && next === '"') {
-        field += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
+      if (inQuotes && next === '"') { field += '"'; i++; }
+      else { inQuotes = !inQuotes; }
       continue;
     }
 
-    if (char === "," && !inQuotes) {
-      row.push(field);
-      field = "";
-      continue;
-    }
+    if (char === "," && !inQuotes) { row.push(field); field = ""; continue; }
 
     if ((char === "\n" || char === "\r") && !inQuotes) {
       if (char === "\r" && next === "\n") i++;
-
       row.push(field);
       rows.push(row);
-
       row = [];
       field = "";
       continue;
@@ -271,17 +216,13 @@ function parseCSV(text) {
   row.push(field);
   rows.push(row);
 
-  while (rows.length && rows[rows.length - 1].every(c => !c || !c.trim())) {
-    rows.pop();
-  }
-
+  while (rows.length && rows[rows.length - 1].every(c => !c || !c.trim())) rows.pop();
   return rows;
 }
 
 // ---------- Helpers ----------
 function normalizeRow(r) {
-  // keep original columns, but guarantee strings
-  const out = {
+  return {
     src: safe(r.src),
     date: safe(r.date),
     location_card: safe(r.location_card),
@@ -292,27 +233,18 @@ function normalizeRow(r) {
     feed: safe(r.feed),
     coordinates: safe(r.coordinates),
   };
-
-  // Some sheets may have slightly different header casing; fallbacks:
-  if (!out.src && r.SRC) out.src = safe(r.SRC);
-  return out;
 }
 
-function setStatus(msg) {
-  statusEl.textContent = msg || "";
-}
+function setStatus(msg) { statusEl.textContent = msg || ""; }
 
 function updateCount(shown, total) {
-  countEl.textContent = total === shown ? `${total} items` : `${shown} / ${total}`;
+  countEl.textContent = (total === shown) ? `${total} items` : `${shown} / ${total}`;
 }
 
-function safe(v) {
-  return (v ?? "").toString().trim();
-}
+function safe(v) { return (v ?? "").toString().trim(); }
 
 function escapeHTML(str) {
-  return (str ?? "")
-    .toString()
+  return (str ?? "").toString()
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
