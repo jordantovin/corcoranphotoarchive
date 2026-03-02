@@ -5,23 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Corcoran Photo Archive</title>
 
-  <!-- GitHub Pages project path -->
-  <link rel="stylesheet" href="https://jordantovin.github.io/corcoranphotoarchive/style.css" />
+  <!-- Custom domain + GitHub Pages: use root-relative paths -->
+  <link rel="stylesheet" href="/style.css">
+  <script src="/script.js" defer></script>
 </head>
 
 <body>
-
   <header class="topbar">
     <div class="wrap">
       <h1>Corcoran Photo Archive</h1>
-
       <div class="controls">
-        <input
-          id="search"
-          type="search"
-          placeholder="Search keywords, location, artist..."
-          autocomplete="off"
-        />
+        <input id="search" type="search" placeholder="Search keywords, location, artist..." autocomplete="off" />
         <span id="count" class="count"></span>
       </div>
     </div>
@@ -31,9 +25,5 @@
     <section id="masonry" class="masonry" aria-live="polite"></section>
     <div id="status" class="status"></div>
   </main>
-
-  <!-- GitHub Pages project path -->
-  <script src="https://jordantovin.github.io/corcoranphotoarchive/script.js"></script>
-
 </body>
 </html>
