@@ -7,12 +7,7 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- bump v= when you update -->
-  <link rel="stylesheet" href="/style.css?v=11">
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="/script.js?v=11" defer></script>
-  <script src="/viewer.js?v=11" defer></script>
-  <script src="/map.js?v=11" defer></script>
+  <link rel="stylesheet" href="/style.css?v=12">
 </head>
 <body>
   <header class="topbar">
@@ -74,5 +69,11 @@
       </div>
     </div>
   </div>
+
+  <!-- Load scripts in specific order - NO defer -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/viewer.js?v=12"></script>
+  <script src="/script.js?v=12"></script>
+  <script src="/map.js?v=12"></script>
 </body>
 </html>
